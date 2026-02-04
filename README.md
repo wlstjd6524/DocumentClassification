@@ -94,7 +94,7 @@ Project/
 
 
 ## 🔨 프로젝트 시스템 아키텍처
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/dfde8ab9-951d-4713-bee4-d92323ee4ea7" />
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
 
 
 # 📷 Data 정보
@@ -134,7 +134,7 @@ Project/
 
 
 ## 📒 EDA
-<img width="600" height="600" alt="Image" src="https://github.com/user-attachments/assets/9855738d-99bb-4d50-8e60-c15bdf38e54c" /> <br> <br>
+<img width="600" height="600" alt="Image" src="https://github.com/user-attachments/assets/b9f17008-bbc6-4462-aef2-5e10b6060c7f" /> <br> <br>
 각 클래스 별로 분포도가 어느정도인지, 해상도는 보통 어느 곳을 주로 바라보는지, Train 과 Test 데이터의 품질 차이 등등
 여러가지 EDA 를 진행하였습니다.
 (파악해본 그래프 형식 이미지가 너무 많아 발표자료에서 대체하겠습니다.)
@@ -366,7 +366,7 @@ CNN 기반 전역 특징 학습만으로는 이러한 미세한 차이를 충분
 ## 📈 결과
 
 ### Leader Board
-<img width="980" height="376" alt="Image" src="https://github.com/user-attachments/assets/d0e38151-5409-4462-81a3-17962a6f2b35" />
+<img width="980" height="376" alt="Image" src="https://github.com/user-attachments/assets/80d27d1f-5257-410f-8f25-d34458244e8c" />
 
 Rank 3 🥉
 
@@ -500,19 +500,19 @@ augmentation이 효과적으로 적용된 것으로 판단하였으나,
 #### 🤝 협업일정 및 방식
 - 협업일정 : 정규 수업시간 (09시 ~ 18시) 도 중 시간제약 없이 현재 진행상황 실시간 공유 및 18시 수업 종료 전 금일 진행했던 프로젝트 작업내용 공유
 - 협업방식 : Slack
-<img width="900" height="800" alt="Image" src="https://github.com/user-attachments/assets/81f398ac-8071-4cd6-b271-67ee838917be" />
+<img width="900" height="800" alt="Image" src="https://github.com/user-attachments/assets/89f9bd7e-d69e-4aea-a7e0-a8a8e5d2ef75" />
 
 - 미팅일정 : 각 개인의 프로젝트 진행율을 반영하여 회의 마지막 진행상황으로 다음 회의 일정 조율하기
 - 미팅방식 : 실시간 Zoom 플랫폼을 통한 화면공유 및 실시간 음성 대화
   
-![Image](https://github.com/user-attachments/assets/871e27df-0bc3-451c-b835-b0ffd373bdb8)
+![Image](https://github.com/user-attachments/assets/292871a9-8417-4901-b08a-f21423be6a82)
 
 #### 📋 일정 및 프로젝트 관리 툴
 - Notion
-<img width="1318" height="935" alt="Image" src="https://github.com/user-attachments/assets/d48451e7-2344-4dff-86a5-1514af420237" /> <br>
+<img width="1318" height="935" alt="Image" src="https://github.com/user-attachments/assets/cde6eacb-26e9-4e8e-95e2-49b5471281f1" /> <br>
 
 - WAN DB
-<img width="1185" height="666" alt="Image" src="https://github.com/user-attachments/assets/f2607638-71d2-45f1-a53e-2e86c58c7796" />
+<img width="1185" height="666" alt="Image" src="https://github.com/user-attachments/assets/99c7bb4d-b8dc-4cfd-bf7a-829c4f376afd" />
 
 ## 🌐 기술스택
 [ConvNeXt] : https://docs.kanaries.net/ko/topics/ChatGPT/convnext
