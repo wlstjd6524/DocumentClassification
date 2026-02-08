@@ -422,7 +422,7 @@ validation에서 제외하고 train에서만 활용하는 방식이 도움이 �
 
 ---
 
-### 2. 2. Canny Edge Detection 기반 학습의 실용성 한계
+### 2. Canny Edge Detection 기반 학습의 실용성 한계
 ### 한계
 
 문서의 구조적 특징을 강조하기 위해
