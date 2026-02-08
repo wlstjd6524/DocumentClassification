@@ -372,7 +372,7 @@ Rank 3 🥉
 
 
 ## 📚 Presentation
-- [발표자료]( )
+- [발표자료](https://github.com/user-attachments/files/25160421/3.Document.Classification.pdf)
 
 
 ## 🔎 프로젝트 한계 및 개선사항
