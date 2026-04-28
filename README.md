@@ -90,81 +90,73 @@
 ## 📺 Presentation
 [발표자료](https://github.com/user-attachments/files/25160421/3.Document.Classification.pdf)
 
-## 💻 개발환경 및 도구
-- Python 3.10.0
-- Linux OS by Upstage GPU Server
-- PyTorch
-- timm
-- Albumentations
-- OpenCV (cv2)
-- Numpy
-- Pandas
-- Scikit-learn
-- tqdm
+## 📂 ReadME Index 
+[🎯 Project Overview (프로젝트 개요 및 목표)](#project-overview) <br>
+
+[⏱️ Project Duration & 🔧 Tech Stack (기간 및 기술스택)](#projectduration-techstack) <br>
+
+[📊 Data Analysis & Hypothesis (데이터 분석 및 실험 방향성 설정)](#data-analysis) <br>
+
+[🚀 Experimental Progression (실험 과정 및 빌드업)](#experimental-progression) <br>
+
+[🧪 Final SOTA Architecture & Result (핵심 실험과 최종 아키텍처 및 최종결과)](#final-sota-architecture) <br>
+
+[🛠️ Troubleshooting & Engineering (문제 해결 및 인프라 안정화)](#troubleshooting-engineering) <br>
+
+[👥 Team Leadership & Management (팀 리더십 및 협업)](#teamleadership-management) <br>
+
+[📈 Retrospective & Future Work (회고 및 향후계획)](#retrospective-futurework)
 
 
-## 📏 프로젝트 목적
-실제 산업 현장에서 발생하는 문서 데이터는 금융, 의료, 보험, 물류 등 도메인을 가리지 않고 존재하며 많은 회사에서 아날로그 데이터의 디지털화를 희망하고 있습니다.
-이를 위해 아날로그 문서 데이터의 종류를 식별하고자 합니다.
+<a id="project-overview"></a>
 
-본 프로젝트는 다양한 유형의 문서 이미지를 17개 클래스로 분류하는 이미지 분류 문제를 해결하는 것을 목표로 합니다.
-또한 분류 문제와 딥러닝의 전체적인 파이프라인 경험, 그리고 PyTorch 의 프레임워크의 입문을 목표로 딥러닝의 전체적인 Flow 이해를 돕기 위해 진행되는 프로젝트 입니다.
+## 🎯 Project Overview
+### 프로젝트 배경
+- 실무 현장에서 수집되는 아날로그 문서 데이터(금융, 의료, 보험, 물류 등) 의 디지털화 니즈가 증가하는 추세입니다.
+- 이에 따라 다양한 양식으로 혼재된 아날로그 문서 데이터의 종류를 자동으로 식별하고 분류하는 시스템 구축이 요구됩니다.
 
-문서 특성상 발생하는 '회전(skew), 종횡비(Aspect Ratio)의 차이, 해상도 불균형' 등의 문제에 강건한 모델을 구축하고자 하였습니다.
-또한 단일 모델 성능의 한계를 극복하기 위해 다른 특성을 가진 두 개의 강력한 백본 모델 ConvNext-Base 와 Swin-Base 를 각각 학습한 뒤, 테스트 데이터에 대해 logits 단위 앙상블(Logit Ensemble) 을 수행하여 최종 예측 성능을 극대화 하는 작업을 진행하였습니다.
+### 핵심 과제
+- 절대적 데이터 볼륨 부족 극복 : 17개의 복잡한 문서 클래스를 분류해야 함에도 불구하고 전체 학습 데이터는 1,570장에 불과하여 발생하는 과적합 위험을 방지할 강력한 일반화 및 데이터 증강 전략을 수립.
+- 미공개 데이터 노이즈 대응 및 강건성 확보 : 구겨짐, 빛 번짐 등 실제 현실의 노이즈가 섞인 3,140장의 테스트 데이터에 대응하기 위해, EDA를 통한 노이즈 유추 및 모델의 강건성 향상.
+- 형태적, 의미적 유사성이 높은 클래스 식별력 강화 : 전체 레이아웃이 거의 동일하고 단 한글자 차이(ex : 입퇴원확인서 vs 진료확인서, 진단서 vs 소견서)로 분류가 갈리는 문서들을 정확히 구분하기 위해 타겟팅 기반의 특징 추출 전략 설계.
+- 클래스 간 데이터 불균형 해소 : 클래스별 이미지 수가 46장에서 100장 사이로 랜덤하게 분포된 불균형 환경을 해결하기 위한 검증(K-Fold) 전략 및 가중치 최적화 방향 수립.
 
-실험 결과를 기반으로 재현 가능하고 확장 가능한 추론 파이프라인을 구축하고자 하였습니다.
-
-
-## 📁 프로젝트 구조
-```text
-Project/
-├─ data/
-│     ├─ train/                 # 학습용 이미지(JPG)
-│     ├─ test/                  # 테스트 이미지(JPG)
-│     ├─ meta.csv
-│     ├─ sample_submission.csv
-│     └─ train.csv
-│
-├─ eda/
-│     ├─ CJ_up_cv_contest_EDA.ipynb
-│     ├─ geonwoo_baseline_code_for_linux/
-│     ├─ jinsung_baseline_EDA/
-│     └─ SH_EDA Result.pdf
-│
-├─ convnext_base1/
-│     └─ predict_logits.pt      # ConvNeXt 테스트 logits
-│
-├─ swin_base_384_v1_infer_add_tta/
-│     └─ predict_logits.pt      # Swin 테스트 logits
-│
-├─ Submission/
-│     └─ submission_conv0.70_swin0.30.csv (예시)
-│
-├─ ensemble_convheavy.py     # 가중 앙상블 스크립트
-│
-├─ convnext_base_single.py   # ConvNeXt 학습 + 추론
-│
-└─ swin_base_384_v1_infer_add_tta.py  # Swin 학습 + 추론
-```
+### 핵심 평가 지표 및 최적화 목표
+단순한 직관전 모델 튜닝을 지양하고, 철저한 EDA 를 기반으로 한 '데이터 중심' 의 문제 해결을 달성하기 위해 다음 지표와 목표를 핵심 타겟으로 삼았습니다.
+  - Macro F1-Score : 데이터의 불균형이 존재하는 환경을 고려하여, 다수 클래스에 편향되지 않고 소수 클래스의 예측 성능까지 종합적으로 평가할 수 있도록 최종 평가지표 `F1 Score` 로 설정.
+  - 데이터 품질 최우선 최적화 : 모델의 복잡도를 무작정 높이기보다, 데이터의 특성(해상도, 종횡비 편차 등)을 이해하고 노이즈에 강건한 전처리 파이프라인을 구축하는 것을 최우선 목표로 설정.
+  - 일반화 성능 극대화 : 로컬 검증 성능에 매몰되지 않고, 실제 리더보드에서의 점수 괴리를 줄이기 위한 객관적 평가 체계 확립.
 
 
-## 🔨 프로젝트 시스템 아키텍처
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
+<a id="projectduration-techstack"></a>
+
+## ⏱️ Project Duration & 🔧 Tech Stack
+### ⏱️ Project Duration
+- 2026.01.23 ~ 2026.02.05
+
+### 🔧 Tech Stack
+| Category | Tech Stack |
+| :--- | :--- |
+| **Language** | Python 3.10.0 |
+| **Hardware** | Single GPU (NVIDIA RTX 3090, 24GB VRAM) |
+| **Deep Learning Framework** | PyTorch |
+| **CV Models (Backbone)**| ResNet-50 (Baseline), ConvNeXt, Swin Transformer |
+| **Model Library** | timm (PyTorch Image Models) |
+| **Data Augmentation & Image Processing** | Albumentations, OpenCV (cv2) |
+| **Machine Learning Utils** | Scikit-learn (StratifiedKFold) |
+| **Data Analysis & EDA** | Pandas, NumPy |
+| **Experiment Tracking & Metric** | Weights & Biases (wandb), F1 Score |
+| **Collaboration** | Slack, Zoom |
 
 
-# 📷 Data 정보
+<a id="data-analysis"></a>
+
+## 📊 Data Analysis & Hypothesis
+### 📷 기본 데이터 구성
 - 학습 데이터  : 총 1570장의 문서 이미지가 존재하며 17개 클래스 안에 각 클래스 별로 46 ~ 100 장 이미지가 랜덤으로 분포되어 있습니다.
-  - train.csv : 학습 이미지의 이름과 클래스 사의 mapping 정보 | ID, Target
-  - meta.csv  : 클래스 이름과 인덱스의 mapping 정보 | target, class_name
-  - train/    : 학습 이미지가 분포되어 있음
+- 테스트 데이터 : 총 3140장의 문서 이미지가 존재하며 여러 Augmentations 이 적용되어있습니다. 어떤 Augmentations 는 Secret Data 로 존재합니다.
 
-- 테스트 데이터 : 총 3140장의 문서 이미지가 존재하며 여러 Augmentations 이 적용돼있음, 어떤 Augmentations 는 Secret
-  - sample_submission.csv : 예측값을 채워넣을 더미 파일
-  - test/                 : 테스트 이미지가 분포되어 있음
- 
-
-## 🧾 Class 정보
+### 🧾 Class 정보
 - 총 17개 클래스가 존재합니다.
 ```
 | target | class_name                                            | Mapping Korea 
@@ -187,6 +179,12 @@ Project/
 |     15 | vehicle_registration_certificate                      | 차량 등록증
 |     16 | vehicle_registration_plate                            | 차량 등록 번호판
 ```
+
+
+
+## 🔨 프로젝트 시스템 아키텍처
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
+ 
 
 
 ## 📒 EDA
