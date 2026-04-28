@@ -1,38 +1,94 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/hoEJPLZy)
+# 👨‍🏫 Document Type Classification Competition
+목적 : 여러 종류의 문서 이미지를 이미지 별로 문서 타입을 분류
 
-## 👨‍🏫 프로젝트 소개
-## Document Type Classification Competition | 문서 타입 분류 대회 <br> <br>
-## Team
-<table>
+## 👨‍👧‍👦 Team 
+<table align="center">
+  <!-- 상단 팀원 이름 Table-->
   <tr>
-    <td> <div align=center> 👑 </div> </td>
-    <td> <div align=center> 🙍 </div> </td>
-    <td> <div align=center> 🙍 </div> </td>
-    <td> <div align=center> 🙍‍♂ </div> </td>
-    <td> <div align=center> 🙍‍♂ </div> </td>
+    <th align="center">👑 이진성</th>
+    <th align="center">🙍 박세희</th>
+    <th align="center">🙍 서효림</th>
+    <th align="center">🙍‍♂ 유창준</th>
+    <th align="center">🙍‍♂ 이건우</th>
   </tr>
+  
+  <!-- 팀원 이미지 Table-->
   <tr>
-    <td> <div align=center> <b>이진성</b> </div> </td>
-    <td> <div align=center> <b>박세희</b> </div> </td>
-    <td> <div align=center> <b>서효림</b> </div> </td>
-    <td> <div align=center> <b>유창준</b> </div> </td>
-    <td> <div align=center> <b>이건우</b> </div> </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/a9befe05-0cb9-4e0c-ba1f-43b4275ce55e" width="130">    <!--이진성-->
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/8640b497-ee8b-426f-b314-e6681ac5e0a6" width="130">    <!--박세희-->
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/5b02c89e-5860-43a6-9adc-d1e2944952f6" width="115">    <!--서효림-->
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/11d4493f-10d3-4342-8bc8-3c78353626e1" width="130">    <!--유창준-->
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/11d4493f-10d3-4342-8bc8-3c78353626e1" width="130">    <!--이건우-->
+    </td>
   </tr>
+
+  <!-- 팀원 역할 Table-->
   <tr>
-    <td> <div align=center> <img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/acd706d5-ec12-46a5-9c00-5c4db3e9487e" /> </td> <!--이진성-->
-    <td> <div align=center> <img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/4c235a37-381f-429b-b71e-294a687bca87" /> </td> <!--박세희-->
-    <td> <div align=center> <img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/93acc3ec-1eb9-457a-a731-db36b1f5c6d0" /> </td> <!--서효림-->
-    <td> <div align=center> <img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/6bc69b86-aef3-4b23-a870-709324ca26b7" /> </td> <!--유창준-->
-    <td> <div align=center> <img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/00940462-ec40-4b50-9942-395ec124d2e1" /> </td> <!--이건우-->
+    <!--이진성-->
+    <td align="center">
+      EDA <br>
+      Data Preprocessor <br>
+      Modeling
+    </td>
+    <!--박세희-->
+    <td align="center">
+      EDA <br>
+      Data Preprocessor <br>
+      Modeling
+    </td>
+    <!--서효림-->
+    <td align="center">
+      EDA <br>
+      Data Preprocessor <br>
+      Modeling
+    </td>
+    <!--유창준-->
+    <td align="center">
+      EDA <br>
+      Data Preprocessor <br>
+      Modeling
+    </td>
+    <!--이건우-->
+    <td align="center">
+      EDA <br>
+      Data Preprocessor <br>
+      Modeling
+    </td>
   </tr>
+
+  <!-- GitHub URL-->
   <tr>
-    <td> <div align=center> <a href="https://github.com/wlstjd6524"> <img alt="Github" src ="https://img.shields.io/badge/Github-181717.svg?&style=plastic&logo=Github&logoColor=white"/> </a> </div> </td>
-    <td> <div align=center> <a href="https://github.com/"> <img alt="Github" src ="https://img.shields.io/badge/Github-181717.svg?&style=plastic&logo=Github&logoColor=white"/> </a> </div> </td>
-    <td> <div align=center> <a href="https://github.com/"> <img alt="Github" src ="https://img.shields.io/badge/Github-181717.svg?&style=plastic&logo=Github&logoColor=white"/> </a> </div> </td>
-    <td> <div align=center> <a href="https://github.com/"> <img alt="Github" src ="https://img.shields.io/badge/Github-181717.svg?&style=plastic&logo=Github&logoColor=white"/> </a> </div> </td>
-    <td> <div align=center> <a href="https://github.com/"> <img alt="Github" src ="https://img.shields.io/badge/Github-181717.svg?&style=plastic&logo=Github&logoColor=white"/> </a> </div> </td>
-    </tr>
+    <td align="center">
+      <a href="https://github.com/wlstjd6524"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/></a>        <!--이진성-->
+    </td>
+    <td align="center">
+      <a href="https://github.com/carolinespwork"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/></a>    <!--박세희-->
+    </td>
+    <td align="center">
+      <a href="https://github.com/S202010741"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/></a>        <!--서효림-->
+    </td>
+    <td align="center">
+      <a href="https://github.com/NullXeronier"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/></a>      <!--유창준-->
+    </td>
+    <td align="center">
+      <a href="https://github.com/lgw2000"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/></a>           <!--이건우-->
+    </td>
+  </tr>
+
 </table>
+
+
+## 📺 Presentation
+[발표자료](https://github.com/user-attachments/files/25160421/3.Document.Classification.pdf)
 
 ## 💻 개발환경 및 도구
 - Python 3.10.0
