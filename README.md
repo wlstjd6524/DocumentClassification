@@ -180,18 +180,96 @@
 |     16 | vehicle_registration_plate                            | 차량 등록 번호판
 ```
 
+### Insight 1. 클래스 분포 불균형을 고려한 검증 및 평가 가설
+<img width="1212" height="547" alt="Image" src="https://github.com/user-attachments/assets/9cd06cbc-c937-4983-ad6f-3fcb8822a726" /> <br>
+
+- 분석 : Train 데이터의 클래스 분포를 시각화한 결과, 대다수의 클래스는 100 장의 이미지를 가지나 일부 클래스는 46~50장 수준으로 절반에 불과한 불균형이 확인되었습니다.
+- 실험방향 : 단순 Accuracy 를 평가지표로 사용할 경우, 다수 클래스에 편향된 결과를 낳을 위험이 매우 높다고 판단했습니다.
+    - 해결 및 가설 : 모델이 소수 클래스의 특성도 놓치지 않도록 평가지표를 F1-Score 로 설정하려고 했습니다. 또한, 검증 셋 분리시 일반적인 K-Fold 가 아닌 클래스 비율을 유지하는 Stratified K-Fold 가 도입되면 좋겠다 라는 가설을 세웠고, 학습 손실함수 설계시 클래스 가중치를 부여하는 방향으로 실험을 전개해야 한다는 가설을 수립했습니다.
+ 
+---
+
+### Insight 2. Train / Test 데이터 간 종횡비 불일치
+<img width="992" height="574" alt="Image" src="https://github.com/user-attachments/assets/0ad89ac4-0ed0-40c1-8788-f19916be0e35" /> <br>
+
+- 분석 : Train 과 Test 데이터의 Aspect Ratio 분포를 겹쳐본 결과, 극명한 차이가 발견되었습니다. Train 샘플은 0.75 비율(세로가 긴 형태)에 극단적으로 밀집되어 있는 반면, Test 샘플은 1.25 ~ 1.4 주변의 비율(가로가 긴 형태) 에서도 높은 밀도를 보였습니다.
+- 실험방향 : 문서 이미지 분류에서 레이아웃은 핵심 특징입니다. 기존의 일반적인 이미지 분류처럼 224 * 224 등의 정사각형으로 강제 리사이징 할 경우, 텍스트 비율이 찌그러지거나 중요한 형태적 특징(ex : 입원 및 퇴원 확인서나 소견서 같은 부분들은 레이아웃도 비슷한데다가 안에 내용들도 어느정도 의학 정보가 담겨 있기 때문에 일반 사용자가 보기에도 해당 데이터 샘플들은 위의 목차를 통해 문서 특징을 분간 할 수 있음.)이 손실될 수 있다고 생각했습니다.
+    - 해결 및 가설 : 일반적인 Resize 연산을 폐기하고, 원본 종횡비를 유지하면서 빈 공간을 패딩으로 채우는 Letterbox Resize 방식을 도입해야 한다는 방향성을 설정했습니다. 또한, 고정된 해상도 입력에 강건한 모델 아키텍처 선정이 필요하다는 가설을 세웠습니다.
+
+---
+
+### Insight 3. 밝기(Brightness) 분포 차이를 통한 Secret 노이즈 유추
+<img width="1389" height="590" alt="Image" src="https://github.com/user-attachments/assets/6162c5cb-3170-4efa-bf69-4fbfde690d59" /> <br>
+
+- 분석 : Train 이미지의 밝기는 100 ~ 175 사이에 다소 안정적으로 분포되어 있습니다. 반면, Test 데이터는 25 ~ 125 구간(매우 어두움)에 큰 피크가 존재하며 전체적으로 노이즈가 강하게 낀 것을 간접적으로 확인했습니다. 실제 Test 데이터 시각화 시에도 빛 번짐, 어두운 환경에서 촬영된 문서들이 다수 관측되었습니다.
+- 실험방향 : Train 데이터 원본만으로 학습시킬 경우, Test 환경의 노이즈를 견디지 못하고 리더보드 점수가 하락하는 '일반화 실패' 가 발생할 것이 자명했습니다.
+    - 해결 및 가설 : Test 데이터의 분포를 모사하기 위해 픽셀 단위의 강한 노이즈 증강 파이프라인을 구축해야 한다는 가설을 설정했습니다.
+
+
+<a id="experimental-progression"></a>
+
+## 🚀 Experimental Progression
+### Phase 1. Baseline 구축 및 데이터 불균형 방어
+- 가설 및 실험 : 문서의 지역적 특징 추출에 강점이 있는 `ConvNext-Base` 를 베이스 라인 모델로 선정했습니다. 극심한 클래스 불균형 문제를 방어하기 위해 StratifiedKFold(n_splits=5) 를 적용하여 검증 셋을 구성하고, 학습 손실 함수에 Soft Target Cross Entropy 를 도입했습니다.
+- 한계직면 : 로컬 검증에서는 F1 Score 가 0.95 이상의 높은 점수를 달성했으나, 리더보드 제출 시 심각한 성능 하락을 경험했습니다.
+
+---
+
+### Phase 2. Data-Centric 최적화 : Label Nosie 탐지 및 Soft Labeling
+- 가설 및 실험 : 성능 하락의 원인이 학습 데이터 내의 잘못된 정답지에 있다고 판단했습니다. 5-Fold OOF 예측값을 바탕으로 Confusion Matrix 를 분석한 결과, 외관이 매우 유사한 입퇴원 확인서(Class 3), 외래진료증명서(Class 7), 소견서(Class 14) 등 특정 클래스에서 오분류가 집중됨을 확인했습니다.
+- 해결책 : 예측 확신도가 0.90 이상이면서 정답이 틀린 33개의 샘플을 '의심군' 으로 추출했습니다. 모델이 잘못된 하드 레이블에 과적합되는 것을 막기 위해, 이 추출된 의심군 데이터들에 한해 1.0 의 하드 정답이 아닌 OOF 확률값을 `soft_targets_prob` 로 변환하여 주입하는 파이프라인을 구축했습니다.
+
+---
+
+### Phase 3. 종횡비(Aspect Ratio) 보존을 위한 자체 Sampler 구현
+- 문제 정의 : EDA 에서 파악한 'Tran / Test 데이터 간의 극단적인 종횡비 차이'를 해결해야 했습니다. 일반적인 224 * 224 강제 리사이징은 문서의 핵심인 텍스트와 레이아웃 비율을 심각하게 왜곡시켰습니다.
+- 해결책 : 원본 비율을 유지하면서 빈 공간을 패딩하는 `use_letterbox = True` 방식을 도입했습니다. 더 나아가 학습 효율을 극대화하기 위해, 비슷한 종횡비를 가진 이미지들끼리 동적으로 배치를 묶어주는 `BucketBatchSampler` 를 자체 구현하여 적용했습니다.
+
+---
+
+### Phase 4. 
+
+---
+
+### Phase 5. 단일 모델의 한계 인식과 SOTA 앙상블로의 피벗
+위와 같은 여러 Phase 들을 나누면서 치열한 데이터 파이프라인 최적화(`Bucket Sampler`, `Soft Labeling`, `Dirty Holdout`)를 통해 로컬과 리더보드 간의 격차를 크게 좁히는 데 성공했습니다.
+
+
+
+
+<a id="final-sota-architecture"></a>
+
+## 🧪 Final SOTA Architecture & Result
+
+
+<a id="troubleshooting-engineering"></a>
+
+## 🛠️ Troubleshooting & Engineering
+
+
+<a id="teamleadership-management"></a>
+
+## 👥 Team Leadership & Management
+
+
+<a id="retrospective-futurework"></a>
+
+## 📈 Retrospective & Future Work
+
+
+
+
+
+
+
+
+
+
 
 
 ## 🔨 프로젝트 시스템 아키텍처
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
- 
 
-
-## 📒 EDA
-<img width="600" height="600" alt="Image" src="https://github.com/user-attachments/assets/b9f17008-bbc6-4462-aef2-5e10b6060c7f" /> <br> <br>
-각 클래스 별로 분포도가 어느정도인지, 해상도는 보통 어느 곳을 주로 바라보는지, Train 과 Test 데이터의 품질 차이 등등
-여러가지 EDA 를 진행하였습니다.
-(파악해본 그래프 형식 이미지가 너무 많아 발표자료에서 대체하겠습니다.)
 
 
 ## ✍ 구현 기능
