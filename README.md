@@ -222,25 +222,28 @@
 ---
 
 ### Phase 3. 종횡비(Aspect Ratio) 보존을 위한 자체 Sampler 구현
-- 문제 정의 : EDA 에서 파악한 'Tran / Test 데이터 간의 극단적인 종횡비 차이'를 해결해야 했습니다. 일반적인 224 * 224 강제 리사이징은 문서의 핵심인 텍스트와 레이아웃 비율을 심각하게 왜곡시켰습니다.
+- 가설 및 실험 : EDA 에서 파악한 'Tran / Test 데이터 간의 극단적인 종횡비 차이'를 해결해야 했습니다. 일반적인 224 * 224 강제 리사이징은 문서의 핵심인 텍스트와 레이아웃 비율을 심각하게 왜곡시켰습니다.
 - 해결책 : 원본 비율을 유지하면서 빈 공간을 패딩하는 `use_letterbox = True` 방식을 도입했습니다. 더 나아가 학습 효율을 극대화하기 위해, 비슷한 종횡비를 가진 이미지들끼리 동적으로 배치를 묶어주는 `BucketBatchSampler` 를 자체 구현하여 적용했습니다.
 
 ---
 
-### Phase 4. 
+### Phase 4. 로컬 검증(Validation) 신뢰성 회복 - Dirty Holdout 구축
+- 문제 정의 : 로컬 검증 점수와 실제 리더보드 점수 간의 극심한 격차를 겪으며, 기존의 랜덤 기반(K-Fold) 검증 방식이 테스트 데이터의 실제 분포를 대변하지 못한다는 치명적인 한계를 인지했습니다.
+- 가설 및 실험 : 로컬 평가 지표의 신뢰성을 회복하기 위해 검증 셋 파이프라인을 전면 수정했습니다. Train Data 내에서 노이즈 수준(빛 번짐, 구겨짐, 대비 등)이 높은 데이터들을 수학적으로 선별하여, 실제 테스트 환경과 유사한 악조건을 가진 `Dirty Holdout` 검증 셋을 자체 구축했습니다.
+- 평가 고도화 : 이에 더해 추론 단계에서도 스캔 과정의 미세한 틀어짐을 보정하기 위해 -15° ~ +15° 사이의 미세 각도 변환을 포함하는 `Adaptive TTA` 를 구현하여, 단순 과적합이 아닌 실제 노이즈 환경에서의 강건성을 객관적으로 평가할 수 있도록 개선했습니다.
 
 ---
 
 ### Phase 5. 단일 모델의 한계 인식과 SOTA 앙상블로의 피벗
 위와 같은 여러 Phase 들을 나누면서 치열한 데이터 파이프라인 최적화(`Bucket Sampler`, `Soft Labeling`, `Dirty Holdout`)를 통해 로컬과 리더보드 간의 격차를 크게 좁히는 데 성공했습니다.
 
-
+- 빌드업 : 여러 시드값에 따른 가중치 앙상블 테스트를 진행한 결과, 단일 구조 모델의 최적화만으로는 미세한 형태 차이를 완벽히 분류하는 데 한계가 있음을 객관적 데이터로 확인했습니다. 이를 돌파하기 위해, ConvNext 와 더불어 문서 전체의 전역 문맥을 파악하는데 특화된 Swin Transform 모델을 도입하여 이중 아키텍처 앙상블을 구축하는 최종 SOTA 파이프라인으로 선회하였습니다. 
 
 
 <a id="final-sota-architecture"></a>
 
 ## 🧪 Final SOTA Architecture & Result
-
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
 
 <a id="troubleshooting-engineering"></a>
 
@@ -255,20 +258,6 @@
 <a id="retrospective-futurework"></a>
 
 ## 📈 Retrospective & Future Work
-
-
-
-
-
-
-
-
-
-
-
-
-## 🔨 프로젝트 시스템 아키텍처
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
 
 
 
