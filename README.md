@@ -243,103 +243,111 @@
 <a id="final-sota-architecture"></a>
 
 ## 🧪 Final SOTA Architecture & Result
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" />
+여러가지 파이프라인을 진행해보면서 겪었뎐 병목현상을 극복하기 위해, 서로 다른 특성을 가진 두 개의 강력한 백본(CNN + Transformer) 을 병합하는 이중 아키텍처 앙상블을 팀의 최종 SOTA Model 파이프라인으로 채택했습니다.
+단순한 하이퍼 파라미터 튜닝을 넘어 데이터 정합성 보정, 문서 특화 전처리, 그리고 Logit 단위의 가중합 앙상블을 통해 일반화 성능을 극대화 했습니다.
+
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b51f24ca-7954-44a9-9442-b0abc99969db" /> <br>
+
+### 1. Data-Centric 최적화 및 정합성 보정
+- Label Correction (오라벨 교정) : `train.csv` 내 7개의 치명적인 잘못된 라벨을 사전 분석하여 수동 교정했습니다. 이를 파이프라인 내 `correct_labels` 로직으로 자동화하여, 모든 모델이 100% 동일하게 정제된 데이터를 학습하도록 일관성을 확보했습니다.
+- 문서 특화 고급 전처리
+  - `Deskew` : 이미지 픽셀 구조를 분석하여 스캔 과정에서 발생한 문서의 미세한 기울기를 자동으로 섬세하게 보정했습니다.
+  - `Letterbox Resize` & `Aspect Ratio Bucketing` : 강제 리사이징으로 인한 문서 왜곡을 막기 위해 원본 종횡비를 유지하며 빈 공간을 패딩하고, 비슷한 비율의 이미지끼리 동적으로 배치를 묶어내는 버킷팅 기법을 구현했습니다.
+- Mixup & Label Smoothing : 두 모델 모두 `timm` 라이브러리의 Mixup 기법과 `SoftTargetCrossEntropy` 를 도입했습니다. 극단적인 하드 라벨(0, 1) 대신 Label Smoothing 이 적용된 타겟을 활용하여 모델의 과적합을 방지했습니다.
+
+### 2. SOTA 아키텍처 구성 및 학습 파이프라인
+- 이중 아키텍처 전략
+  - ConvNext-Base : CNN 계열 특유의 강력한 지역 패턴 학습 능력을 활용해 문서 이미지의 텍스트와 레이아웃 디테일을 추출했습니다.
+  - Swin-Base : 윈도우 기반 Self-Attention 을 통해 문서의 전역 문맥을 파악하며, 384 * 384 의 고정 해상도에서 안정적인 학습을 수행했습니다.
+- 학습 및 최적화 설정
+  - 검증 체계 : 5-Fold Stratified Cross Validation 을 기반으로, 클래스 불균형 문제를 상쇄하기 위해 Class Weight 가 반영된 Validation Loss 를 평가지표로 활용했습니다.
+  - 학습 안정화 : 메모리 최적화를 위한 AMP(Mixed Precision) 와 `CosineAnnealingWarmRestarts` 스케줄러를 적용했습니다.
+  - Early Stopping : 각 모델의 학습 속도에 맞춰 ConvNext 는 Patience 5, Swin 은 Patience 7 을 적용해서 각 Fold 별 최적의 CheckPoint 를 디스크에 저장했습니다.
+ 
+### 3. 추론 최적화(TTA) 및 Final Logit Ensemble
+- Fold Ensemble & TTA : 테스트 추론시 0°, 90°, 180°, 270°의 `rot90` TTA 를 부여한 뒤, 각 Fold 에서 도출된 Logit 값들의 평균을 내어 모델별 1차 안정성을 극대화했습니다.
+- 가중합 기반 최종 앙상블
+  - 각 모델이 예측한 최종 확률값을 `predict_logits.pt` 로 저장하고 분리하여 메모리 병목을 없앴습니다.
+  - Softmax 통과 이전의 Logit 단계에서 ConvNext 와 Swin 의 비율을 조절해가며 앙상블 가중합을 수행했습니다.
+  - 실험 결과, 앙상블 가중치를 여러 비율을 섞으면서 테스트 Submission 을 해보면서 최적의 비율인 ConvNext : Swin = 0.7 : 0.3 의 가중치로 병합한 후 `argmax` 를 취했을 때 리더보드 환경에서 가장 강력하고 안정적인 최종 성능이 도출됨을 증명했습니다.
+ 
+### 🏆 Final Performance & Leaderboard
+- Final Model : ConvNext & Swin 0.7:0.3 Ensemble
+- F1 Score : 0.9174
+
+<img width="980" height="376" alt="Image" src="https://github.com/user-attachments/assets/298c49e6-93c4-4eac-a171-099a68f3a1fb" /> <br>
+Rank: 🥉3rd
+
 
 <a id="troubleshooting-engineering"></a>
 
 ## 🛠️ Troubleshooting & Engineering
+### 1. 제한된 하드웨어 리소스 극복 및 메모리 안정화
+#### 문제 정의
+파라미터가 큰 Swin-Base 와 ConvNext 모델을 고해상도로 학습시키는 과정에서 24GB VRAM 환경의 단일 GPU 메모리 한계에 빈번하게 부딪혀 학습 파이프라인이 중단되는 문제가 발생했습니다.
+
+#### 원인 분석
+모델 자체의 크기뿐만 아니라, 5-Fold 교차 검증을 진행하며 각 Fold 가 넘어갈 때 마다 이전 Fold 의 모델 객체와 데이터 로더가 GPU 메모리에서 완전히 해제되지 않아 발생하는 메모리 누수 및 단편화가 원인이었습니다.
+
+#### 해결 방안
+- Gradient Accumulation : 물리적인 Batch Size 를 강제로 줄이는 대신 `accmulation_stpes = 4` 를 적용하면서, OOM(Out Of Memory) 을 방어하면서도 실질적인 Batch Size 를 유지했습니다.
+- 명시적 캐시 클리어 : 각 Fold 종료 시그널에 맞춰 `gc.collect()` , `torch.cuda.empty_cache()` 를 강제 호출하는 `cleanup_cuda()` 파이프라인을 구축했습니다.
+- 메모리 파편화 제어 : 환경 변수 `PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"` 을 설정하여 PyTorch 의 캐시 할당자 동작을 최적화했습니다.
+
+#### 인사이트
+딥러닝 모델링은 단순히 수학적 정확도를 높이는 것을 넘어, 주어진 하드웨어 인프라 자원을 얼마나 극한으로 효울화하여 사용할 수 있는가에 대한 '엔지니어링 최적화'가 동반되어야 함을 체감했습니다.
+
+---
+
+### 2. 앙상블 파이프라인 병목 현상 및 시간 비용 최적화
+#### 문제 정의
+TTA 가 적용된 여러 Fold 의 모델들을 추론 시점에 동시에 메모리에 올려 앙상블을 진행하려고 하자, 극심한 시간 지연과 추론 서버의 OOM 이 발생했습니다.
+
+#### 원인 분석
+최적의 앙상블 가중치를 찾기 위해 비율을 변경할 때마다 무거운 모델의 예측 함수를 처음부터 다시 태우는 비효율적인 구조로 코드가 설계되어 있었습니다.
+
+#### 해결 방안
+추론 단계와 앙상블 단계를 물리적으로 분리했습니다.
+  - 무거운 모델 추론은 단 한번만 실행하여 산출된 예측 확률을 `predict_logits.pt` 파일로 디스크에 직렬화 했습니다.
+  - 이후 별도의 가벼운 앙상블 스크립트를 구축하여, 캐싱된 Logit 파일만 로드한 뒤 CPU 환경에서 ConvNext 와 Swin 의 가중치를 0.75 부터 1.00 까지 0.05 단위로 즉각적으로 Sweep 하며 최적의 비율을 탐색하도록 자동화 했습니다.
+
+#### 인사이트
+반복되는 병목 구간을 캐싱을 통해 분리함으로써, 실험에 소요되는 시간 비용을 혁신적으로 단축할 수 있었습니다. 현업에서의 배포 환경과 서비스 추론 속도를 고려한 아키텍처 설계의 중요성을 깨달았습니다.
+
+---
+
+### 3. 실용성과 성능의 트레이드오프(Trade-off) 조율
+#### 문제 정의
+문서 클래스 간 유사성이 높아(예: 진단서 vs 소견서) 모델의 형태적 식별력을 끌어올리기 위한 추가적인 전처리가 필요했습니다.
+
+#### 원인 분석
+초기에는 원본 이미지의 외곽선 정보를 극대화할 수 있는 Canny Edge Detection 이미지를 생성하여 입력 채널에 추가하거나 TTA에 활용하면 레이아웃 식별 성능이 개선될 것으로 보았습니다.
+
+#### 해결 방안
+해당 방식을 로컬 환경에서 테스트해 본 결과, 성능의 미세한 향상 가능성은 보였으나 전처리 파이프라인의 연산 비용과 추론 시간이 기존 대비 기하급수적으로 증가하는 것을 확인했습니다. 팀 내 논의를 거쳐, 자원 소모 대비 이점이 적다고 판단하여 최종 SOTA 모델에서는 과감히 폐기하고 가벼운 Letterbox Resize로 대체했습니다.
+
+#### 인사이트
+단순히 모델의 Score를 0.01 올리는 것보다, 연산 비용과 추론 시간 증가율을 계산하여 "이 기술이 정말 상용화 가치가 있는가?"를 묻는 실용성(속도/자원) 중심의 밸런스 조율이 필수적임을 배웠습니다.
 
 
 <a id="teamleadership-management"></a>
 
 ## 👥 Team Leadership & Management
+단순 코드 병합 중심의 개발을 넘어, '실험 결과와 인사이트의 병합' 이 핵심인 프로젝트 특성에 맞춰 다음과 같은 엄격한 연구 협업 룰을 세팅하고 리드했습니다.
 
+1. 1일 1회 리더보드 제출 : 완벽주의에 빠져서 로컬 환경에서 실험만 반복하는 것을 방지하고자 했습니다. 매일 정략적 지표를 강제로 확인하게 하여 파이프라인의 방향성을 끊임없이 수정할 수 있게 리드했습니다.
+2. 데이터 기반 소통 규칙 : 추상적인 텍스트 공유를 금지했습니다. EDA 결과나 실험 인사이트를 Slack 에 공유할 때는 반드시 시각화된 데이터나 통계 지표를 첨부하도록 규정하여 팀 내 커뮤니케이션의 객관성을 확보하고자 했습니다.
+3. 데일리 랩업 : 매일 정규 시간 전, 각자가 개별적으로 진행한 파이프라인 실험 결과와 성능 향상 로직을 투명하게 공유했습니다. 이를 통해 성공적인 실험 요소들이 팀원 전체의 파이프라인에 즉각적으로 이식될 수 있는 선순환 구조를 만들고자 했습니다.
+4. W&B 기반 실험 트래킹 : 개인 로컬 환경에서 발생하는 실험 파편화를 막기 위해 Weight & Biases 를 연동하여 프로젝트 관리를 지시했습니다. 모든 실험의 하이퍼파라미터와 평가지표를 실시간으로 중앙 집중화하여, 주관적 판단이 아닌 Metric 기반의 판단 시스템을 정착시키고자 했습니다.
+
+<img width="1185" height="666" alt="Image" src="https://github.com/user-attachments/assets/36a1a970-1fab-4f1e-ac9f-9bc05386cd33" /> <br>
+협업 플랫폼 : Slack, Zoom
 
 <a id="retrospective-futurework"></a>
 
 ## 📈 Retrospective & Future Work
 
 
-
-## ✍ 구현 기능
-### 0. 데이터 전처리 및 라벨 정합성 보정
-- train.csv 내 일부 샘플의 잘못된 라벨을 사전 분석 후 수동으로 교정하게 되었습니다.
-```
-# 오라벨 List {
-        "45f0d2dfc7e47c03.jpg": 7, "aec62dced7af97cd.jpg": 14, "0583254a73b48ece.jpg": 10,
-        "1ec14a14bbe633db.jpg": 7, "c5182ab809478f12.jpg": 14, "8646f2c3280a4f49.jpg": 3,
-        "38d1796b6ad99ddd.jpg": 10,
-}
-```
-- 학습 시잔 전 Label Correction 로직을 통해 자동으로 수정된 CSV 를 생성하였습니다.
-- 또한 모든 모델에서 동일한 Corrected Label 을 사용하여 학습 일관성을 확보하였습니다.
-
-
-### 1. 모델 학습 (5-Fold Stratifed Cross Validation)
-- 학습전략으로 StratifiedKFold(n_splits = 5) 를 적용하였습니다.
-- 클래스 불균형 문제 해결을 위하여 class weight 기반 Validation Loss 를 계산하여 진행하였습니다.
-- 각 학습마다 Early Stopping 을 적용하였습니다.
-  - Swin : Patience 7
-  - ConvNext : Patience 5
-- 그 후 각 fold 별 Best ChekcPoint 를 저장하는 구조로 진행하였습니다.
-
-
-### 2. 모델 선정
-- 선정모델 : ConvNext 
-- 모델 선정 이유 : CNN 계열의 강력한 지역 패턴 학습 능력 과 문서 이미지의 텍스트/레이아웃 특징에 강함
-- 선정모델 : Swin Transformer
-- 모델 선정 이유 : 윈도우 기반 self-attention 으로 전역 문맥 파악에 유리하며 고정 해상도(384) 에서 안정적인 학습 특성을 가짐
-- 서로 다른 구조 Comment : 따라서 서로 강점을 가지면서 구조가 다른 (CNN + Transformer) 의 조합으로 앙상블 효과 극대화
-- 모델 학습 구조 : 모델 학습 구조는 다음을 따름
-  - 5-Fold Stratified Cross Validation
-  - AMP 기반 Mixed Precision Training
-  - CosineAnnealingWarmRestarts Scheduler
-  - Early Stopping
-  - rot90 TTA + fold logits 평균 
-- 평가 지표 : Macro F1-Score
-
-
-### 3. 데이터 증강(Augmentation) 전략
-- Swin-Base 384
-  - 입력 크기 : 384 * 384 고정
-  - Albumentations 기반 증강을 진행하였습니다.
-    - ShiftScaleRotate (소규모 변형)
-    - RandomBrightnessContrast
-    - CoarseDropout
-    - Normalize + ToTensroV2
-
-- ConvNeXt-Base
-  - 문서 이미지 특성을 고려한 고급 전처리를 진행하였습니다.
-    - Deskew : 문서 기울기 자동 및 섬세한 보정
-    - Letterbox Reszie : 종횡비 유지 + 패딩
-  - Aspect Ratio Bucketing
-    - 이미지 비율에 따라 해상도 버킷을 생성하여 왜곡을 최소화 하였습니다.
-  - Albumentations 증강
-    - ShiftScaleRotate
-    - RandomBrightnessContrast
-    - Blur 계열 증강
-    - CoarseDropout
-
-
-### 4. Mixup 기반 학습 안정화
-- 두 모델 모두 timm Mixup 을 적용하였습니다.
-- SoftTargetCrossEntropy 를 사용하였습니다.
-- Label smoothing 을 적용하였고 과적합 방지 및 일반화 성능 향상을 기대할 수 있었습니다.
-
-
-### 5. 추론(TTA) 및 Fold Ensemble
-- rot90 기반 Test Time Augmentation 을 부여하였습니다.
-  - 0, 90, 180, 270 회전 을 부여
-- 각 fold 의 Logits 평균을 도출하였습니다. -> Fold Ensemble
-- 모데별 최종 테스트 Logits 를 생성하였습니다.
-
-
-### 6. Logit Ensemble 기반 최종 제출 생성
-- ConvNext / Swin 각각의 Predict_logits.pt 를 로드하여 logits 단위 가중합을 수행하였습니다.
-```
-final_logits = w_conv * conv_logits + (1 - w_conv) * swin_logits
-```
-- softmax 없이 argmax(final_logits) 로 최종 예측을 진행하였고 가중치 실험 결과 Conv:Swin 비율을 0.70:0.30 로 섞어서 추론한 결과값이 안정적인 최고 성능을 내는 걸 확인 할 수 있었습니다.
 
 
 ## 🚨 문제 및 인사이트 도출
@@ -482,18 +490,6 @@ CNN 기반 전역 특징 학습만으로는 이러한 미세한 차이를 충분
 다양한 검증 전략을 직접 시도해본 경험 자체가 프로젝트에서 중요한 자산이 되었다.
 
 ---
-
-
-## 📈 결과
-
-### Leader Board
-<img width="980" height="376" alt="Image" src="https://github.com/user-attachments/assets/80d27d1f-5257-410f-8f25-d34458244e8c" />
-
-Rank 3 🥉
-
-
-## 📚 Presentation
-- [발표자료](https://github.com/user-attachments/files/25160421/3.Document.Classification.pdf)
 
 
 ## 🔎 프로젝트 한계 및 개선사항
